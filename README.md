@@ -8,10 +8,21 @@ A production-oriented, modular Speech-to-Text (STT) engine built from scratch us
 
 Build a proprietary multilingual STT model that:
 
-- Transcribes speech in **English 🇬🇧**, **Hindi 🇮🇳**, and **Gujarati** accurately
+- Transcribes speech in **English 🇬🇧**, **Hindi 🇮🇳**, and **Gujarati 🇮🇳** accurately
 - Runs inference on **Mac / CPU** without requiring CUDA
 - Supports **real-time** speech-to-text
 - Is fully modular, testable, and production-ready
+
+---
+
+## 📦 Datasets & Releases
+
+Pre-packaged clean dataset archives can be downloaded directly from [GitHub Releases (v1.0.0)](https://github.com/pryanshinewebai-pixel/STT-model/releases):
+
+- **🎙️ Conversational STT Dataset (`conversational_stt_dataset.zip`)**: **356 MB**  
+  *3,496 high-quality conversational clips (Gujarati, Hindi, English dialogues, greetings, daily queries & mic recordings).*
+- **📚 Master Multilingual Dataset (`colab_stt_dataset.zip`)**: **1.81 GB**  
+  *7,206 clips (~19 hours of clean speech across Gujarati, Hindi, and English).*
 
 ---
 
