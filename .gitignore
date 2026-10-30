@@ -1,5 +1,5 @@
 # ============================================================
-# Our STT Model — .gitignore
+# STT Model — Comprehensive .gitignore
 # ============================================================
 
 # --- Python ---
@@ -17,54 +17,86 @@ venv/
 env/
 .venv/
 .env/
+ENV/
 
-# --- macOS ---
+# --- macOS System Files ---
 .DS_Store
 .AppleDouble
 .LSOverride
 ._*
+.Spotlight-V100
+.Trashes
 
-# --- IDE / Editor ---
+# --- IDE / Editor Settings ---
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.project
+.settings/
 
-# --- Jupyter / Colab ---
+# --- Jupyter / Notebook Checkpoints ---
 .ipynb_checkpoints/
-*.ipynb
 
-# --- Model Checkpoints & Weights ---
+# --- Heavy Model Weights & Checkpoints (Exceeds GitHub 100MB limit) ---
+*.safetensors
 *.pt
 *.pth
 *.ckpt
 *.bin
 *.onnx
-checkpoints/
+*.h5
+*.pb
+*.tflite
+models/
 saved_models/
+checkpoints/
+hf_space/model/
+Desktop/
 
-# --- Large Audio Files ---
+# --- Large Audio & Media Files (Do not commit to Git) ---
 *.wav
 *.mp3
 *.flac
 *.ogg
 *.m4a
+*.webm
+*.aac
+*.wma
+*.opus
 
-# --- Datasets (do not commit large data) ---
+# --- Datasets & Chunks (Thousands of generated clips) ---
 data/raw/
 data/processed/
+data/chunked_dataset/
+data/conversational_dataset/
+data/*/wav_chunks/
+data/*/mp3_chunks/
+data/*/wav/
+data/*/features/
+data/*/tokenized_transcripts/
+data/*/transcripts/
 
-# --- Logs ---
+# --- Temporary & Output Directories ---
+outputs/
+temp/
+tmp/
+scratch/
+
+# --- Compressed Archives ---
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.rar
+*.bz2
+
+# --- Logs & Tracking ---
 logs/
 *.log
 runs/
 wandb/
-
-# --- Misc ---
-*.tar.gz
-*.zip
-*.7z
-.env
-*.pickle
-*.pkl
+.pytest_cache/

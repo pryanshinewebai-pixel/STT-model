@@ -7,9 +7,13 @@ Responsibility: Person 1 (Data Collection + Cleaning + Preprocessing)
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Tuple
 
+import librosa
 import numpy as np
+import torch
+import torchaudio
+import torchaudio.transforms as T
 
 
 class AudioProcessor:
@@ -26,13 +30,15 @@ class AudioProcessor:
         self,
         sample_rate: int = 16000,
         mono: bool = True,
-        max_duration: float = 30.0,
-        min_duration: float = 0.5,
+        max_duration: float = 300.0,
+        min_duration: float = 0.1,
+        trim_silence: bool = True,
     ) -> None:
         self.sample_rate = sample_rate
         self.mono = mono
         self.max_duration = max_duration
         self.min_duration = min_duration
+        self.trim_silence_flag = trim_silence
 
     def load(self, file_path: str | Path) -> Tuple[np.ndarray, int]:
         """Load an audio file and return (waveform, sample_rate).
@@ -41,27 +47,66 @@ class AudioProcessor:
             file_path: Path to the audio file (.wav, .mp3, .flac).
 
         Returns:
-            Tuple of (waveform as numpy array, sample rate).
+            Tuple of (waveform as 1D numpy float32 array, target sample rate).
 
         Raises:
             FileNotFoundError: If the audio file does not exist.
             ValueError: If audio duration is out of allowed bounds.
         """
-        # TODO: Implement audio loading with torchaudio / soundfile
-        raise NotImplementedError("AudioProcessor.load() not yet implemented.")
+        path = Path(file_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Audio file not found: {path}")
+
+        try:
+            waveform_tensor, orig_sr = torchaudio.load(str(path))
+        except Exception:
+            # Fallback to librosa for formats unsupported by default torchaudio backend
+            waveform_np, orig_sr = librosa.load(str(path), sr=None, mono=self.mono)
+            waveform_tensor = torch.from_numpy(waveform_np).unsqueeze(0)
+
+        # Convert to mono if multi-channel
+        if self.mono and waveform_tensor.shape[0] > 1:
+            waveform_tensor = torch.mean(waveform_tensor, dim=0, keepdim=True)
+
+        waveform = waveform_tensor.squeeze(0).numpy().astype(np.float32)
+
+        # Resample if sample rates differ
+        if orig_sr != self.sample_rate:
+            waveform = self.resample(waveform, orig_sr)
+
+        # Trim leading and trailing silence
+        if self.trim_silence_flag:
+            waveform = self.trim_silence(waveform)
+
+        # Normalize amplitude
+        waveform = self.normalize(waveform)
+
+        # Validate duration
+        if not self.validate(waveform, self.sample_rate):
+            duration = len(waveform) / self.sample_rate
+            raise ValueError(
+                f"Audio duration ({duration:.2f}s) outside range [{self.min_duration}s, {self.max_duration}s]: {path}"
+            )
+
+        return waveform, self.sample_rate
 
     def resample(self, waveform: np.ndarray, orig_sr: int) -> np.ndarray:
         """Resample waveform to the target sample rate.
 
         Args:
-            waveform: Input audio waveform.
+            waveform: Input audio waveform (1D numpy array).
             orig_sr: Original sample rate of the waveform.
 
         Returns:
-            Resampled waveform as numpy array.
+            Resampled waveform as 1D numpy array.
         """
-        # TODO: Implement resampling logic
-        raise NotImplementedError("AudioProcessor.resample() not yet implemented.")
+        if orig_sr == self.sample_rate:
+            return waveform
+
+        waveform_tensor = torch.from_numpy(waveform).unsqueeze(0)
+        resampler = T.Resample(orig_freq=orig_sr, new_freq=self.sample_rate)
+        resampled_tensor = resampler(waveform_tensor)
+        return resampled_tensor.squeeze(0).numpy().astype(np.float32)
 
     def normalize(self, waveform: np.ndarray) -> np.ndarray:
         """Normalize waveform amplitude to [-1.0, 1.0].
@@ -72,8 +117,10 @@ class AudioProcessor:
         Returns:
             Normalized waveform.
         """
-        # TODO: Implement peak / RMS normalization
-        raise NotImplementedError("AudioProcessor.normalize() not yet implemented.")
+        max_val = np.max(np.abs(waveform))
+        if max_val > 0:
+            return (waveform / max_val).astype(np.float32)
+        return waveform.astype(np.float32)
 
     def validate(self, waveform: np.ndarray, sample_rate: int) -> bool:
         """Check if audio meets duration and quality constraints.
@@ -100,5 +147,5 @@ class AudioProcessor:
         Returns:
             Trimmed waveform.
         """
-        # TODO: Implement silence trimming with librosa
-        raise NotImplementedError("AudioProcessor.trim_silence() not yet implemented.")
+        trimmed_waveform, _ = librosa.effects.trim(waveform, top_db=top_db)
+        return trimmed_waveform.astype(np.float32)
