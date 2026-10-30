@@ -7,5 +7,7 @@ for the STT pipeline.
 
 from preprocessing.audio import AudioProcessor
 from preprocessing.features import FeatureExtractor
+from preprocessing.tokenizer import CTCTokenizer
 
-__all__ = ["AudioProcessor", "FeatureExtractor"]
+__all__ = ["AudioProcessor", "FeatureExtractor", "CTCTokenizer"]
+
