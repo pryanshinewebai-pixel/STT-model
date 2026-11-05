@@ -676,16 +676,16 @@ def main():
 
     print("\n" + "=" * 65)
     try:
-        print("🚀 LOADING FINE-TUNED WHISPER MODEL...")
-        whisper_engine = STTInference(device="cpu")
+        print(f"🚀 LOADING WHISPER MODEL ON {args.device.upper()}...")
+        whisper_engine = STTInference(device=args.device)
         print("✅ Fine-Tuned Whisper Loaded Successfully!")
     except Exception as e:
-        logger.warning(f"Whisper engine could not be loaded (fallback to proprietary): {e}")
+        logger.warning(f"Whisper engine could not be loaded: {e}")
         whisper_engine = None
 
     try:
-        print("🚀 LOADING PROPRIETARY CONFORMER MODEL (30MB)...")
-        proprietary_engine = ProprietarySTTInference(device="cpu")
+        print(f"🚀 LOADING PROPRIETARY CONFORMER MODEL (30MB) ON {args.device.upper()}...")
+        proprietary_engine = ProprietarySTTInference(device=args.device)
         print("✅ Proprietary Conformer Loaded Successfully!")
     except Exception as e:
         logger.error(f"Proprietary engine load failed: {e}")
