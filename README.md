@@ -144,16 +144,6 @@ our-stt-model/
 
 ---
 
-## 👥 Team Responsibilities (4 People)
-
-| Person | Role                                           | Key Modules                              |
-|--------|------------------------------------------------|------------------------------------------|
-| **P1** | Data Collection + Cleaning + Preprocessing     | `data/`, `preprocessing/`, `scripts/`    |
-| **P2** | Tokenizer + Text Processing + Evaluation       | `tokenizer/`, `evaluation/`              |
-| **P3** | Model Architecture (Encoder + Attention + Decoder) | `model/`                              |
-| **P4** | Training + Validation + Optimization + Deployment | `training/`, `inference/`, `configs/`  |
-
----
 
 ## 🚀 Getting Started
 
