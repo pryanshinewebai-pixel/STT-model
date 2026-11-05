@@ -108,6 +108,22 @@ class STTInference:
         waveform = waveform.astype(np.float32)
         duration = round(len(waveform) / sample_rate, 2)
 
+        # Silence / Muted Microphone Detection (prevents Whisper hallucination on empty input)
+        max_amp = float(np.max(np.abs(waveform))) if len(waveform) > 0 else 0.0
+        if max_amp < 0.005 or duration < 0.3:
+            logger.warning(f"Audio is silent (max amplitude: {max_amp:.4f}). Skipping Whisper hallucination.")
+            return {
+                "text": "⚠️ (Aawaz record nahi hui / Mic muted tha. Kripya thoda tez bolein ya browser mic permission check karein!)",
+                "duration": duration,
+                "language": "none",
+            }
+
+        # Resample to 16kHz if needed
+        if sample_rate != 16000:
+            import librosa
+            waveform = librosa.resample(waveform, orig_sr=sample_rate, target_sr=16000)
+            sample_rate = 16000
+
         # Normalize language code if provided
         lang_code = self.LANG_CODES.get(language.lower() if language else "", None)
         forced_decoder_ids = None

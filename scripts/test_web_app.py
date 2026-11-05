@@ -321,6 +321,9 @@ HTML_PAGE = """<!DOCTYPE html>
                 <button class="mic-circle" id="micBtn" onclick="toggleMic()"><i class="fa-solid fa-microphone"></i></button>
                 <p id="micStatus" style="font-size: 14px; color: var(--text-muted);">Click microphone & speak in Gujarati, Hindi, or English</p>
                 <div id="recTimer" style="display:none; font-size:16px; font-weight:700; color:var(--danger);">00:00</div>
+                <div id="volContainer" style="display:none; width: 220px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 8px;">
+                    <div id="volumeBar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.05s ease;"></div>
+                </div>
             </div>
 
             <!-- Upload Section -->
@@ -377,6 +380,7 @@ HTML_PAGE = """<!DOCTYPE html>
         let recorderNode;
         let pcmBuffers = [];
         let mediaStream;
+        let actualSampleRate = 16000;
 
         function setModel(model) {
             currentModel = model;
@@ -398,21 +402,40 @@ HTML_PAGE = """<!DOCTYPE html>
         async function toggleMic() {
             if (!isRecording) {
                 try {
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, sampleRate: 16000 } });
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioContext.state === 'suspended') {
+                        await audioContext.resume();
+                    }
+                    actualSampleRate = audioContext.sampleRate || 16000;
                     audioInput = audioContext.createMediaStreamSource(mediaStream);
 
                     recorderNode = audioContext.createScriptProcessor(4096, 1, 1);
                     pcmBuffers = [];
 
+                    const volBar = document.getElementById('volumeBar');
+                    const volContainer = document.getElementById('volContainer');
+                    if (volContainer) volContainer.style.display = 'block';
+
                     recorderNode.onaudioprocess = function(e) {
                         if (!isRecording) return;
                         const channelData = e.inputBuffer.getChannelData(0);
+                        let sum = 0;
+                        for (let i = 0; i < channelData.length; i++) {
+                            sum += channelData[i] * channelData[i];
+                        }
+                        const rms = Math.sqrt(sum / channelData.length);
+                        if (volBar) {
+                            volBar.style.width = Math.min(100, Math.round(rms * 450)) + '%';
+                        }
                         pcmBuffers.push(new Float32Array(channelData));
                     };
 
                     audioInput.connect(recorderNode);
-                    recorderNode.connect(audioContext.destination);
+                    const silentGain = audioContext.createGain();
+                    silentGain.gain.value = 0.0;
+                    recorderNode.connect(silentGain);
+                    silentGain.connect(audioContext.destination);
 
                     isRecording = true;
                     document.getElementById('micBtn').classList.add('recording');
@@ -429,15 +452,17 @@ HTML_PAGE = """<!DOCTYPE html>
                         document.getElementById('recTimer').textContent = `${m}:${s}`;
                     }, 1000);
                 } catch(e) {
-                    alert('Microphone error: ' + e.message);
+                    alert('Microphone error: ' + e.message + '. Please allow microphone access in your browser.');
                 }
             } else {
                 isRecording = false;
                 clearInterval(timerInterval);
+                const volContainer = document.getElementById('volContainer');
+                if (volContainer) volContainer.style.display = 'none';
 
                 if (recorderNode) {
-                    recorderNode.disconnect();
-                    audioInput.disconnect();
+                    try { recorderNode.disconnect(); } catch(e){}
+                    try { audioInput.disconnect(); } catch(e){}
                 }
                 if (mediaStream) {
                     mediaStream.getTracks().forEach(t => t.stop());
@@ -502,12 +527,12 @@ HTML_PAGE = """<!DOCTYPE html>
 
         async function sendPCMAsWav() {
             if (!pcmBuffers.length) return;
-            const wavBlob = exportWAV(pcmBuffers, 16000);
+            const wavBlob = exportWAV(pcmBuffers, actualSampleRate);
             const reader = new FileReader();
             reader.readAsDataURL(wavBlob);
             reader.onloadend = async () => {
                 const b64 = reader.result.split(',')[1];
-                await postAudio({ audio_b64: b64, format: 'wav', model: currentModel });
+                await postAudio({ audio_b64: b64, format: 'wav', sample_rate: actualSampleRate, model: currentModel });
             };
         }
 
@@ -563,6 +588,14 @@ def load_audio_from_bytes(audio_bytes: bytes) -> tuple[np.ndarray, int]:
     """Read any audio bytes directly via soundfile or fallback to native macOS afconvert."""
     try:
         audio, sr = sf.read(io.BytesIO(audio_bytes), dtype="float32")
+        if audio.ndim > 1:
+            audio = audio.mean(axis=1)
+        if sr != 16000:
+            import librosa
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=16000)
+            sr = 16000
+        return audio, sr
+    except Exception:
         if audio.ndim > 1:
             audio = audio.mean(axis=1)
         return audio, sr
