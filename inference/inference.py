@@ -66,7 +66,12 @@ class STTInference:
     def _load_model(self) -> None:
         """Load fine-tuned model and processor."""
         if not self.model_path.exists():
-            raise FileNotFoundError(f"Model path does not exist: {self.model_path}")
+            logger.warning(f"Local model path not found at {self.model_path}. Loading standard 'openai/whisper-small'...")
+            self.model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small").to(self.device)
+            self.processor = WhisperProcessor.from_pretrained("openai/whisper-small")
+            self.model.eval()
+            logger.info("✅ Whisper model and processor loaded successfully!")
+            return
 
         self.model = WhisperForConditionalGeneration.from_pretrained(str(self.model_path)).to(self.device)
         self.model.eval()
@@ -75,8 +80,8 @@ class STTInference:
         try:
             self.processor = WhisperProcessor.from_pretrained(str(self.model_path))
         except Exception:
-            logger.info("Using standard whisper-tiny processor mapping...")
-            self.processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+            logger.info("Using standard whisper-small processor mapping...")
+            self.processor = WhisperProcessor.from_pretrained("openai/whisper-small")
 
         logger.info("✅ Fine-tuned STT model and processor loaded successfully!")
 
