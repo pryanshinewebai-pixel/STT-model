@@ -1,4 +1,5 @@
 # 🎙️ Our STT Model — Proprietary Multilingual Speech-to-Text
+**Author:** Priyanshi Modi ([@pryanshinewebai-pixel](https://github.com/pryanshinewebai-pixel))
 
 A production-oriented, modular Speech-to-Text (STT) engine built from scratch using **Python** and **PyTorch**. Designed to support **English**, **Hindi**, and **Gujarati** with CPU-friendly inference on macOS.
 
@@ -159,8 +160,8 @@ our-stt-model/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-org>/our-stt-model.git
-cd our-stt-model
+git clone https://github.com/pryanshinewebai-pixel/STT-model.git
+cd STT-model
 ```
 
 ### 2. Create a Virtual Environment
