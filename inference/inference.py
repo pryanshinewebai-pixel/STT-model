@@ -8,6 +8,7 @@ Optimized for CPU/MPS inference on macOS.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -141,7 +142,26 @@ class STTInference:
         if not p.exists():
             raise FileNotFoundError(f"Audio file not found: {p}")
 
-        audio, sr = sf.read(str(p), dtype="float32")
+        try:
+            audio, sr = sf.read(str(p), dtype="float32")
+        except Exception:
+            import subprocess, tempfile
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
+                tmp_out_path = tmp_out.name
+            try:
+                subprocess.run(
+                    ["/usr/bin/afconvert", "-f", "WAVE", "-d", "LEI16@16000", "-c", "1", str(p), tmp_out_path],
+                    check=True,
+                    capture_output=True
+                )
+                audio, sr = sf.read(tmp_out_path, dtype="float32")
+            finally:
+                if os.path.exists(tmp_out_path):
+                    try:
+                        os.unlink(tmp_out_path)
+                    except Exception:
+                        pass
+
         result = self.transcribe_array(audio, sample_rate=sr, language=language)
         result["file_name"] = p.name
         result["audio_path"] = str(p.resolve())

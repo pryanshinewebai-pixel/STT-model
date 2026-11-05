@@ -49,7 +49,9 @@ ENV/
 *.h5
 *.pb
 *.tflite
-models/
+models/*
+!models/proprietary/
+!models/proprietary/*.json
 saved_models/
 checkpoints/
 hf_space/model/
