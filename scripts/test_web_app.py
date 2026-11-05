@@ -35,7 +35,7 @@ from inference.proprietary_inference import ProprietarySTTInference
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-PORT = 8080
+PORT = int(os.environ.get("PORT", 8080))
 whisper_engine: STTInference = None
 proprietary_engine: ProprietarySTTInference = None
 
@@ -675,13 +675,20 @@ def main():
     args = parser.parse_args()
 
     print("\n" + "=" * 65)
-    print("🚀 LOADING FINE-TUNED WHISPER MODEL (~95% ACCURACY)...")
-    whisper_engine = STTInference(device="cpu")
-    print("✅ Fine-Tuned Whisper Loaded Successfully!")
+    try:
+        print("🚀 LOADING FINE-TUNED WHISPER MODEL...")
+        whisper_engine = STTInference(device="cpu")
+        print("✅ Fine-Tuned Whisper Loaded Successfully!")
+    except Exception as e:
+        logger.warning(f"Whisper engine could not be loaded (fallback to proprietary): {e}")
+        whisper_engine = None
 
-    print("🚀 LOADING PROPRIETARY CONFORMER MODEL (30MB)...")
-    proprietary_engine = ProprietarySTTInference(device="cpu")
-    print("✅ Proprietary Conformer Loaded Successfully!")
+    try:
+        print("🚀 LOADING PROPRIETARY CONFORMER MODEL (30MB)...")
+        proprietary_engine = ProprietarySTTInference(device="cpu")
+        print("✅ Proprietary Conformer Loaded Successfully!")
+    except Exception as e:
+        logger.error(f"Proprietary engine load failed: {e}")
     print("=" * 65)
 
     server = ReusableServer(("", args.port), STTTesterHandler)

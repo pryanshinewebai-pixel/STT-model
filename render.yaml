@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: indic-stt-model
+    runtime: python
+    buildCommand: "pip install --upgrade pip && pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt transformers"
+    startCommand: "python scripts/test_web_app.py"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: WHISPER_REMOTE_MODEL
+        value: openai/whisper-tiny
+    plan: free

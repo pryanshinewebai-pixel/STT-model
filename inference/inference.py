@@ -66,9 +66,10 @@ class STTInference:
     def _load_model(self) -> None:
         """Load fine-tuned model and processor."""
         if not self.model_path.exists():
-            logger.warning(f"Local model path not found at {self.model_path}. Loading standard 'openai/whisper-small'...")
-            self.model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small").to(self.device)
-            self.processor = WhisperProcessor.from_pretrained("openai/whisper-small")
+            remote_model = os.environ.get("WHISPER_REMOTE_MODEL", "openai/whisper-tiny")
+            logger.warning(f"Local model path not found at {self.model_path}. Loading '{remote_model}'...")
+            self.model = WhisperForConditionalGeneration.from_pretrained(remote_model).to(self.device)
+            self.processor = WhisperProcessor.from_pretrained(remote_model)
             self.model.eval()
             logger.info("✅ Whisper model and processor loaded successfully!")
             return

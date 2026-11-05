@@ -52,6 +52,7 @@ ENV/
 models/*
 !models/proprietary/
 !models/proprietary/*.json
+!models/proprietary/*.pt
 saved_models/
 checkpoints/
 hf_space/model/
